@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package wms;
+
+// Определение структуры запроса
+message GetTilesRequest {
+  string boundingBoxWKT = 1;
+  repeated string tile_ids = 2;
+  string format = 3;
+  repeated string layers = 4;
+  repeated string styles = 5;
+}
+
+// Определение структуры ответа
+message TileResponse {
+  bytes image = 1;  // Изображение тайла в бинарном формате
+}
+
+// Определение gRPC сервиса
+service TileService {
+  // Метод для получения тайлов
+  rpc GetTiles(GetTilesRequest) returns (TileResponse);
+}
+
