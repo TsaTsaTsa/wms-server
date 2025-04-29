@@ -105,4 +105,6 @@ public class GetMapRequest {
     public void setBbox(double minX, double minY, double maxX, double maxY) {
         this.bbox = new BoundingBox(minX, minY, maxX, maxY);
     }
+
+
 }

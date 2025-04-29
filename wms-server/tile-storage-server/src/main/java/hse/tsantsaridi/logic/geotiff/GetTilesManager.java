@@ -10,30 +10,46 @@ import com.google.protobuf.ByteString;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
 import org.gdal.gdal.WarpOptions;
-import org.gdal.gdalconst.gdalconstConstants;
 import org.gdal.ogr.Geometry;
 import org.gdal.ogr.ogr;
 import wms.TileServiceOuterClass;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 public class GetTilesManager {
     private static final String TILES_DIR = System.getenv("TILES_DIR");
+    private static final String STYLE_DIR = System.getenv("STYLE_DIR");
+    private static final String IM_CMD = System.getenv("IMAGE_MAGICK");
 
     public static void initializeGDAL() {
         gdal.AllRegister();
         ogr.RegisterAll();
     }
 
-    /**
-     * Разбирает bounding box из WKT-строки и возвращает соответствующую геометрию.
-     */
+    private static Path applyStyle(Path src, String styleName) throws IOException, InterruptedException {
+        Path lut = Path.of(STYLE_DIR + "\\" + styleName + "_style.png");
+
+        if (!Files.exists(lut)) throw new IOException("Unknown style: " + styleName);
+        Path dst = Files.createTempFile("styled_", ".png");
+
+        ProcessBuilder pb = new ProcessBuilder(
+                IM_CMD,
+                src.toAbsolutePath().toString(),
+                lut.toAbsolutePath().toString(),
+                "-clut",
+                dst.toAbsolutePath().toString()
+        );
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        Process p = pb.start();
+        if (p.waitFor() != 0)
+            throw new IOException("ImageMagick error, exit code " + p.exitValue());
+        return dst;
+    }
+
     public static Geometry parseBoundingBox(String wkt) throws IOException {
         Geometry geom = Geometry.CreateFromWkt(wkt);
         if (geom == null) {
@@ -146,12 +162,7 @@ public class GetTilesManager {
     /**
      * Очищает временные файлы, созданные в процессе обработки.
      */
-    public static void cleanupTemporaryFiles(List<String> tileIds, String mosaicFile) {
-        try {
-            Files.deleteIfExists(Paths.get(mosaicFile));
-        } catch (IOException e) {
-            System.err.println("Не удалось удалить файл: " + mosaicFile);
-        }
+    public static void cleanupTemporaryFiles(List<String> tileIds) {
         for (String tileId : tileIds) {
             Path tempPath = Paths.get("temp_" + tileId + ".tif");
             try {
@@ -176,11 +187,10 @@ public class GetTilesManager {
     public static ByteString getTileData(TileServiceOuterClass.GetTilesRequest request) throws IOException {
         initializeGDAL();
 
-        Geometry overallGeom = parseBoundingBox(request.getBoundingBoxWKT());
+        Geometry bbox = parseBoundingBox(request.getBoundingBoxWKT());
         List<Dataset> croppedDatasets = new ArrayList<>();
-        List<String> processedTileIds = new ArrayList<>();
+        List<String> tempTileFiles = new ArrayList<>();
 
-        // Обрабатываем каждый запрошенный тайл
         for (String tileId : request.getTileIdsList()) {
             Dataset tileDs = openTile(tileId);
             if (tileDs == null) {
@@ -193,16 +203,16 @@ public class GetTilesManager {
                 tileDs.delete();
                 continue;
             }
-            Geometry intersection = tileGeom.Intersection(overallGeom);
+            Geometry intersection = tileGeom.Intersection(bbox);
             if (intersection == null || intersection.IsEmpty()) {
                 tileDs.delete();
                 continue;
             }
             int[] cropParams = computeCropParameters(tileDs, intersection);
             Dataset croppedDs = cropTile(tileDs, tileId, cropParams[0], cropParams[1], cropParams[2], cropParams[3]);
+            tempTileFiles.add("temp_" + tileId + ".tif");
             if (croppedDs != null) {
                 croppedDatasets.add(croppedDs);
-                processedTileIds.add(tileId);
             }
             tileDs.delete();
         }
@@ -210,17 +220,34 @@ public class GetTilesManager {
         if (croppedDatasets.isEmpty()) {
             throw new IOException("Нет тайлов, пересекающихся с запрошенной областью.");
         }
+        Path mosaicTif = Files.createTempFile("mosaic_", ".tif");
+        Dataset mosaicDs = mosaicTiles(croppedDatasets, bbox, mosaicTif.toString());
+        cleanupTemporaryFiles(tempTileFiles);
+        croppedDatasets.forEach(Dataset::delete);
 
-        String outputFile = "mosaic.png";
-        Dataset mosaicDs = mosaicTiles(croppedDatasets, overallGeom, outputFile);
+        Path png;
+        if (!request.getStyles(0).isEmpty()) {
+            mosaicDs.delete();
+            try { png = applyStyle(mosaicTif, request.getStyles(0)); }  // ImageMagick -clut
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("ImageMagick interrupted", e);
+            }
+        } else {
+            png = Files.createTempFile("mosaic_", ".png");
+            Vector<String> opts = new Vector<>(List.of("-of", "PNG"));
 
-        // Освобождаем ресурсы обрезанных тайлов
-        for (Dataset ds : croppedDatasets) {
-            ds.delete();
+            gdal.Translate(
+                    png.toString(),
+                    gdal.Open(mosaicTif.toString()),
+                    new TranslateOptions(opts)
+            );
+            mosaicDs.delete();
         }
+        byte[] bytes = Files.readAllBytes(png);
+        Files.deleteIfExists(mosaicTif);
+        Files.deleteIfExists(png);
 
-        byte[] imageBytes = Files.readAllBytes(Paths.get(outputFile));
-        cleanupTemporaryFiles(processedTileIds, outputFile);
-        return ByteString.copyFrom(imageBytes);
+         return ByteString.copyFrom(bytes);
     }
 }

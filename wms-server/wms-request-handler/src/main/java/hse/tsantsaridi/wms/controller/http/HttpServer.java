@@ -9,10 +9,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;;
+import io.netty.handler.codec.http.HttpResponseEncoder;
+import java.util.logging.Logger;
 
 public class HttpServer {
     private final int port;
+    private static final Logger LOG = Logger.getLogger(HttpServer.class.getName());
 
     public HttpServer(int port) {
         this.port = port;
@@ -38,6 +40,7 @@ public class HttpServer {
             ChannelFuture f = b.bind(port).sync();
             f.channel().closeFuture().sync();
         } finally {
+            LOG.warning("Shutting down HTTP server");
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }

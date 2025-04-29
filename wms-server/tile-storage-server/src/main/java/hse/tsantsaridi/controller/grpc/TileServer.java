@@ -9,6 +9,7 @@ import wms.TileServiceOuterClass;
 import wms.TileServiceOuterClass.TileResponse;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class TileServer extends TileServiceGrpc.TileServiceImplBase {
 

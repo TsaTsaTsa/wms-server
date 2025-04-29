@@ -29,7 +29,7 @@ public class TileClient {
         TileServiceGrpc.TileServiceBlockingStub stub = TileServiceGrpc.newBlockingStub(channel);
 
         GetTilesRequest request = GetTilesRequest.newBuilder()
-                .setBoundingBoxWKT(gmr.getBbox().toString())
+                .setBoundingBoxWKT(gmr.getBbox().toWktString())
                 .addAllTileIds(tileGroup.getTilesIds())
                 .addAllStyles(gmr.getStyles())
                 .addAllLayers(gmr.getLayers())

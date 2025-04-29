@@ -27,4 +27,13 @@ public class BoundingBox {
     public double getMaxY() {
         return maxY;
     }
+
+    public String toWktString() {
+        return String.format("POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))",
+                minX, minY,
+                minX, maxY,
+                maxX, maxY,
+                maxX, minY,
+                minX, minY);
+    }
 }

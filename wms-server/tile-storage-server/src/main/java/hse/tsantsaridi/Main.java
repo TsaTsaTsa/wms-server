@@ -1,6 +1,7 @@
 package hse.tsantsaridi;
 
 import hse.tsantsaridi.controller.grpc.TileServer;
+import hse.tsantsaridi.logic.geotiff.GetTilesManager;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
@@ -8,6 +9,8 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
+        GetTilesManager.initializeGDAL();
+
         Server server = ServerBuilder.forPort(50051)
                 .addService(new TileServer())
                  .maxInboundMessageSize(20 * 1024 * 1024)

@@ -19,7 +19,7 @@ public class GetMapManager {
         GetMapRequest gmr = GetMapRequestParser.parse(uri);
         boolean isRequestCorrect = new GetMapValidator().isRequestCorrect(gmr);
         List<TileGroup> tileGroups = tileRepo.findTilesByBBox(gmr.getBbox());
-
+        joinTiles(tileGroups);
         return sendGrpc(tileGroups, gmr);
     }
 
@@ -32,7 +32,7 @@ public class GetMapManager {
         return tileResponses;
     }
 
-    private void joinTiles() {
+    private void joinTiles(List<TileGroup> tileGroups) {
 
     }
 }
