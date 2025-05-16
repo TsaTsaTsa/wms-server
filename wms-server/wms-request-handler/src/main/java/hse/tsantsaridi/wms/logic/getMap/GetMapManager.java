@@ -7,7 +7,6 @@ import hse.tsantsaridi.wms.logic.validator.GetMapValidator;
 import hse.tsantsaridi.wms.repository.TileRepository;
 import wms.TileServiceOuterClass.TileResponse;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,9 +14,10 @@ public class GetMapManager {
     private final TileRepository tileRepo = new TileRepository();
     private final TileClient tileClient = new TileClient();
 
-    public List<TileResponse> getResponse(String uri) throws SQLException {
+    public List<TileResponse> getResponse(String uri) {
         GetMapRequest gmr = GetMapRequestParser.parse(uri);
-        boolean isRequestCorrect = new GetMapValidator().isRequestCorrect(gmr);
+        new GetMapValidator().validate(gmr);
+
         List<TileGroup> tileGroups = tileRepo.findTilesByBBox(gmr.getBbox());
         joinTiles(tileGroups);
         return sendGrpc(tileGroups, gmr);

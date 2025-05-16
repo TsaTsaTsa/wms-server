@@ -14,12 +14,12 @@ public class GetMapRequest {
     private int width;  // Ширина изображения
     private int height;  // Высота изображения
     private String format;  // Формат изображения
-    private boolean transparent;  // Прозрачность
+    private String transparent;  // Прозрачность
 
     public GetMapRequest() {}
     public GetMapRequest(String version, List<String> layers, List<String> styles,
                          String crs, BoundingBox bbox, int width, int height,
-                         String format, boolean transparent) {
+                         String format, String transparent) {
         this.version = version;
         this.layers = layers;
         this.styles = styles;
@@ -90,11 +90,11 @@ public class GetMapRequest {
         this.format = format;
     }
 
-    public boolean isTransparent() {
+    public String getTransparent() {
         return transparent;
     }
 
-    public void setTransparent(boolean transparent) {
+    public void setTransparent(String transparent) {
         this.transparent = transparent;
     }
 
@@ -105,6 +105,4 @@ public class GetMapRequest {
     public void setBbox(double minX, double minY, double maxX, double maxY) {
         this.bbox = new BoundingBox(minX, minY, maxX, maxY);
     }
-
-
 }

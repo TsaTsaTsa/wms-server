@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MetadataRepository {
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/wms_metadata";//System.getenv("DB_URL");
-    private static final String DB_USER = "postgres";//System.getenv("DB_USER");
-    private static final String DB_PASSWORD = "1234";//System.getenv("DB_PASSWORD");
-    private static final int POOL_SIZE = 10;
+    private static final String DB_URL = System.getenv().getOrDefault("META_DB_URL", "jdbc:postgresql://localhost:5432/wms_metadata");//"jdbc:postgresql://localhost:5432/wms_metadata";
+    private static final String DB_USER = System.getenv().getOrDefault("META_DB_USER", "postgres");//"postgres";
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("META_DB_PASSWORD", "1234");//"1234";
+    private static final int POOL_SIZE = Integer.parseInt(System.getenv().getOrDefault("META_POOL_SIZE", "10"));//10;
 
     private static final HikariConfig config = new HikariConfig();
     private static final HikariDataSource dataSource;

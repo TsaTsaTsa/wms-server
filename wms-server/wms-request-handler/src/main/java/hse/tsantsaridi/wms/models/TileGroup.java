@@ -3,22 +3,16 @@ package hse.tsantsaridi.wms.models;
 import java.util.List;
 
 public class TileGroup {
-    private String nodeHost;
-    private int nodePort;
+    private int port;
     private List<String> tilesIds;
 
-    public TileGroup(String nodeHost, int nodePort, List<String> tilesIds) {
-        this.nodeHost = nodeHost;
-        this.nodePort = nodePort;
+    public TileGroup(int shardId, List<String> tilesIds) {
+        this.port = shardId;
         this.tilesIds = tilesIds;
     }
 
-    public String getNodeHost() {
-        return nodeHost;
-    }
-
-    public int getNodePort() {
-        return nodePort;
+    public int getPort() {
+        return port;
     }
 
     public List<String> getTilesIds() {

@@ -1,5 +1,6 @@
 package hse.tsantsaridi.wms.controller.http;
 
+import hse.tsantsaridi.wms.controller.gRPC.TileClient;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -10,11 +11,12 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 public class HttpServer {
     private final int port;
-    private static final Logger LOG = Logger.getLogger(HttpServer.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(HttpServer.class);
 
     public HttpServer(int port) {
         this.port = port;
@@ -40,7 +42,7 @@ public class HttpServer {
             ChannelFuture f = b.bind(port).sync();
             f.channel().closeFuture().sync();
         } finally {
-            LOG.warning("Shutting down HTTP server");
+            logger.error("Shutting down HTTP server");
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }

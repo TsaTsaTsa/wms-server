@@ -9,7 +9,6 @@ public class GetMapRequestParser {
 
     public static GetMapRequest parse(String queryString) {
         GetMapRequest request = new GetMapRequest();
-
         String[] params = queryString.split("&");
 
         for (String param : params) {
@@ -18,6 +17,9 @@ public class GetMapRequestParser {
             String value = keyValue.length == 2 ? keyValue[1] : "";
 
             switch (key) {
+                case "/?VERSION":
+                    request.setVersion(value);
+                    break;
                 case "VERSION":
                     request.setVersion(value);
                     break;
@@ -47,7 +49,7 @@ public class GetMapRequestParser {
                     request.setFormat(value);
                     break;
                 case "TRANSPARENT":
-                    request.setTransparent(Boolean.parseBoolean(value));
+                    request.setTransparent(value);
                     break;
             }
         }

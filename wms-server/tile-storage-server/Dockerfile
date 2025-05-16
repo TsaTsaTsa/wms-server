@@ -1,17 +1,39 @@
-FROM ubuntu:22.04
+# Use the Ubuntu-based GDAL image with "small" footprint
+FROM osgeo/gdal:ubuntu-full-3.6.3
 
-ENV DEBIAN_FRONTEND=noninteractive
-
+# Install curl, wget, ca-certificates, ImageMagick and GDAL CLI tools
 RUN apt-get update
+RUN apt-get install -y --no-install-recommends ca-certificates wget
+RUN apt-get install -y --no-install-recommends unzip
+RUN apt-get install -y --no-install-recommends imagemagick 
+RUN rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install -y --no-install-recommends openjdk-21-jre-headless
-RUN apt-get install -y gdal-bin
-RUN apt-get install -y libgdal-dev
+# Install Java 21 from Eclipse Temurin
+ENV LANG=en_US.UTF-8
+ENV JAVA_HOME=/usr/lib/jvm/msopenjdk-21-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+COPY --from=mcr.microsoft.com/openjdk/jdk:21-ubuntu $JAVA_HOME $JAVA_HOME
 
+ENV LD_LIBRARY_PATH=/usr/share/java/
+ENV IMAGE_MAGICK=magick
 
-ENV GDAL_DATA=/usr/share/gdal
-ENV PROJ_LIB=/usr/share/proj
-ENV LD_LIBRARY_PATH=/usr/lib
+# Set working directory
+WORKDIR /app
 
-COPY target/tile-storage-server-1.0-SNAPSHOT.jar /app/app.jar
-CMD ["java", "-Djava.library.path=/usr/lib", "-jar", "/app/app.jar"]
+# Create and populate data directories for styles and tiles
+RUN mkdir -p /app/data/styles /app/data/tiles
+COPY opt/styles      /app/data/styles
+COPY ethiopia_tiles  /app/data/tiles
+
+# Ensure application picks up these paths
+ENV TILES_DIR=/app/data/tiles/
+ENV STYLE_DIR=/app/data/styles/
+
+# Copy application JAR
+COPY target/tile-storage-server-1.0-SNAPSHOT.jar /app/tile-storage.jar
+
+# Expose gRPC port
+EXPOSE 50051
+
+# Launch the Java application
+ENTRYPOINT ["java", "-jar", "/app/tile-storage.jar"]
