@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  storage0a:
+    image: tile-storage-server:latest
+    volumes:
+      - ./data/shard_0:/data/tiles
+      - ./opt/styles:/data/styles 
+
+  storage1a:
+    image: tile-storage-server:latest
+    volumes:
+      - ./data/shard_1:/data/tiles 
+      - ./opt/styles:/data/styles
+
+  db:
+    image: postgis/postgis:17-3.5     
+    container_name: db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: tiles_metadata
+    volumes:
+      - db_data:/var/lib/postgresql/data           
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro   
+    ports:
+      - "5432:5432"
+
+  wms-request-server:
+    image: wms-request-server
+    environment:
+      NGINX_GATEWAY_HOST: postgres-nginx-1
+      TILE_DB_URL: jdbc:postgresql://db:5432/tiles_metadata
+      TILE_DB_USER: postgres
+      TILE_DB_PASSWORD: 1234
+      TILE_POOL_SIZE: 10	
+    depends_on:
+      - db
+      - storage0a
+      - storage0b
+      - storage1a
+    ports:
+      - "8080:8080"
+
+  nginx:
+    image: nginx
+    ports:
+      - "50052:50052"
+      - "50051:50051"
+    depends_on:
+      - storage0a
+      - storage0b
+      - storage1a
+    command: ["nginx", "-g", "daemon off;"]
+
+volumes:
+  db_data:
