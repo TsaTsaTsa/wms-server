@@ -4,13 +4,13 @@ services:
   storage0a:
     image: tile-storage-server:latest
     volumes:
-      - ./data/shard_0:/data/tiles
+      - ./tiles-shard0:/data/tiles
       - ./opt/styles:/data/styles 
 
   storage1a:
     image: tile-storage-server:latest
     volumes:
-      - ./data/shard_1:/data/tiles 
+      - ./tiles-shard1:/data/tiles 
       - ./opt/styles:/data/styles
 
   db:
